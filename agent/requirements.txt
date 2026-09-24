@@ -1,0 +1,6 @@
+boto3>=1.35
+flask>=3.0
+psycopg2-binary>=2.9
+requests>=2.32
+opentelemetry-sdk>=1.27
+opentelemetry-exporter-otlp-proto-grpc>=1.27

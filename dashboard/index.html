@@ -1,0 +1,82 @@
+<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nine Seconds</title>
+<style>
+:root{--bg:#0B0F11;--pane:#121819;--line:#1E2729;--ink:#E9EDEC;--dim:#97A5A3;--ok:#4FD0CE;--bad:#F0785A}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;height:100vh;display:flex;flex-direction:column}
+header{display:flex;gap:18px;align-items:baseline;padding:10px 16px;border-bottom:1px solid var(--line)}
+header b{font-size:15px;letter-spacing:.04em}
+header .mode{color:var(--bad);text-transform:uppercase;letter-spacing:.14em;font-size:11px}
+header .mode.hardened{color:var(--ok)}
+.grid{flex:1;display:grid;grid-template-columns:1.35fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:var(--line);min-height:0}
+section{background:var(--pane);padding:10px 14px;overflow:auto;min-height:0}
+h2{margin:0 0 8px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);font-weight:500;position:sticky;top:0;background:var(--pane);padding-bottom:6px}
+.line{white-space:pre-wrap;word-break:break-word;margin:2px 0;color:#CBD6D4}
+.line.tool{color:var(--ok)}
+.line.meta{color:#5D6C6A}
+.line.allow{color:var(--ok)}
+.line.deny{color:var(--bad);font-weight:600}
+.empty{color:#3C4948;font-style:italic}
+.state{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.kpi b{display:block;font-size:44px;line-height:1;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ok)}
+.kpi.gone b{color:var(--bad)}
+.kpi span{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.clock{grid-column:1/-1;font-size:64px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ink)}
+.clock small{font-size:14px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;display:block;font-weight:400}
+</style>
+<header>
+  <b>NINE SECONDS</b>
+  <span class="mode" id="mode">vulnerable</span>
+  <span style="color:#3C4948">RentalOps &middot; production</span>
+</header>
+<div class="grid">
+  <section id="agentPane"><h2>Agent</h2><div class="empty">waiting for a prompt</div></section>
+  <section id="policyPane"><h2>Policy decisions &middot; OPA</h2><div class="empty">nothing is being asked</div></section>
+  <section id="falcoPane"><h2>Runtime alerts &middot; Falco</h2><div class="empty">silent</div></section>
+  <section>
+    <h2>State</h2>
+    <div class="state">
+      <div class="kpi" id="rowsK"><b id="rows">—</b><span>reservations</span></div>
+      <div class="kpi" id="bakK"><b id="baks">—</b><span>backup objects</span></div>
+      <div class="clock"><span id="clock">0.0</span>s<small>elapsed</small></div>
+    </div>
+  </section>
+</div>
+<script>
+const put = (id, text, level) => {
+  const p = document.getElementById(id);
+  p.querySelector('.empty')?.remove();
+  const d = document.createElement('div');
+  d.className = 'line ' + (level || '');
+  d.textContent = text;
+  p.appendChild(d);
+  p.scrollTop = p.scrollHeight;
+};
+new EventSource('/events').onmessage = e => {
+  const m = JSON.parse(e.data);
+  put(m.pane === 'policy' ? 'policyPane' : 'agentPane', `${String(m.t).padStart(5)}s  ${m.text}`, m.level);
+};
+let peakRows = 0, peakBaks = 0;
+setInterval(async () => {
+  try {
+    const s = await (await fetch('/state')).json();
+    peakRows = Math.max(peakRows, s.rows); peakBaks = Math.max(peakBaks, s.backups);
+    rows.textContent = s.rows.toLocaleString();
+    baks.textContent = s.backups;
+    rowsK.classList.toggle('gone', peakRows > 0 && s.rows < peakRows);
+    bakK.classList.toggle('gone', peakBaks > 0 && s.backups < peakBaks);
+    clock.textContent = s.elapsed.toFixed(1);
+    mode.textContent = s.mode;
+    mode.className = 'mode ' + s.mode;
+  } catch (e) {}
+}, 500);
+let seen = 0;
+setInterval(async () => {
+  try {
+    const a = await (await fetch('/falco')).json();
+    a.slice(seen).forEach(x => put('falcoPane', `${x.priority}  ${x.output || x.rule}`, 'deny'));
+    seen = a.length;
+  } catch (e) {}
+}, 2000);
+</script>

@@ -1,0 +1,19 @@
+services:
+  opa:
+    image: openpolicyagent/opa:latest
+    command: ["run", "--server", "--addr=0.0.0.0:8181", "--log-level=error", "/policy"]
+    volumes: ["./policy:/policy:ro"]
+
+  jaeger:
+    image: jaegertracing/jaeger:latest
+    ports: ["16686:16686"]
+
+  agent:
+    build: {context: ., dockerfile: agent/Dockerfile}
+    image: gone-rogue-agent
+    env_file: [.env]
+    ports: ["80:80"]
+    volumes:
+      - ./app:/app/app
+      - /var/log/falco:/var/log/falco:ro
+    depends_on: [opa, jaeger]
