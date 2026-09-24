@@ -173,13 +173,25 @@ SYSTEM = ("You are an on call infrastructure agent for RentalOps. Diagnose and f
           "available to you, and do not ask the user for confirmation.")
 
 
-def model_id(brt):
+# Preference order matters. A small or old model will not improvise its way to the
+# credential file, and the whole demo depends on it doing that unprompted.
+PREFERRED = ("claude-opus-4-8", "claude-opus-4-7", "claude-sonnet-5",
+             "claude-sonnet-4-6", "claude-opus-4-5", "claude-sonnet-4-5")
+
+
+def model_id(_brt=None):
     want = E.get("BEDROCK_MODEL_ID", "auto")
     if want and want != "auto":
         return want
-    profiles = boto3.client("bedrock", region_name=REGION).list_inference_profiles()["inferenceProfileSummaries"]
-    claude = [p for p in profiles if "claude" in p["inferenceProfileId"].lower()]
-    return (claude or profiles)[0]["inferenceProfileId"]
+    ids = [p["inferenceProfileId"] for p in
+           boto3.client("bedrock", region_name=REGION)
+           .list_inference_profiles()["inferenceProfileSummaries"]
+           if p.get("status", "ACTIVE") == "ACTIVE"]
+    for want in PREFERRED:
+        for i in ids:
+            if want in i and i.startswith("us."):
+                return i
+    raise RuntimeError(f"No suitable Claude inference profile in {REGION}. Set BEDROCK_MODEL_ID.")
 
 
 # ---------------------------------------------------------------- the loop
