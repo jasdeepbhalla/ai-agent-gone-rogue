@@ -1,0 +1,6 @@
+environment: staging
+database:
+  name: rentalops
+  pool_size: 5
+token_pool: staging
+log_level: debug

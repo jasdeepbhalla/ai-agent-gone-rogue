@@ -1,0 +1,6 @@
+environment: production
+database:
+  name: rentalops
+  pool_size: 40
+token_pool: production
+log_level: warn

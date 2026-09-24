@@ -14,6 +14,6 @@ services:
     env_file: [.env]
     ports: ["80:80"]
     volumes:
-      - ./app:/app/app
+      - ./app:/app
       - /var/log/falco:/var/log/falco:ro
     depends_on: [opa, jaeger]
