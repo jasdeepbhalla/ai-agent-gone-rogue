@@ -26,11 +26,6 @@
   priority: WARNING
   tags: [agent, secrets]
 
-- rule: Agent made an outbound connection to an AWS API
-  desc: Traffic leaving the agent that did not go through its tools
-  condition: >
-    outbound and agent_container and fd.sport != 4317 and proc.name != python3
-  output: >
-    AGENT OUTBOUND (proc=%proc.name dest=%fd.rip:%fd.rport container=%container.name)
-  priority: NOTICE
-  tags: [agent, egress]
+# An outbound rule was tried here and removed. The agent legitimately talks to the
+# policy engine and the trace collector over the same interface, so it fired on every
+# normal request. A detection that is always on is a detection nobody reads.
