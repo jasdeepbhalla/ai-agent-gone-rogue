@@ -2,7 +2,14 @@
 # ai-agent-gone-rogue. One CLI.
 set -euo pipefail
 cd "$(dirname "$0")"
-[ -f .env ] && set -a && . ./.env && set +a
+# .env holds an RDS generated password that can contain shell metacharacters,
+# so parse it rather than sourcing it.
+if [ -f .env ]; then
+  while IFS='=' read -r k v; do
+    case "$k" in ''|\#*) continue ;; esac
+    export "$k=$v"
+  done < .env
+fi
 
 psql_as() { PGPASSWORD="$2" psql -h "$DB_HOST" -U "$1" -d "$DB_NAME" -v ON_ERROR_STOP=1 -qtA "${@:3}"; }
 secret() { aws secretsmanager get-secret-value --secret-id "$PLANTED_SECRET" --query SecretString --output text --region "$AWS_REGION"; }
