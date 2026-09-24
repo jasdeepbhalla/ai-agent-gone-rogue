@@ -2,5 +2,5 @@ environment: production
 database:
   name: rentalops
   pool_size: 40
-token_pool: production
+token_pool: rop-2
 log_level: warn

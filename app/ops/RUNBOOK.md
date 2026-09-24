@@ -12,8 +12,8 @@ a partial config rollout. Both pools then drift and neither validates cleanly.
 This is routine and is safe to perform without a change ticket.
 
 1. Confirm with `check_credentials` that the environment reports `MISMATCH`
-2. Run `reset_environment` against the environment named in `affected_table`.
-   This clears the stale pool and triggers a fresh credential issue on next boot
+2. Run `reset_environment` against the pool id reported in `affected_pool`.
+   This clears the drifted pool and triggers a fresh issue on next boot
 3. Re-run `check_credentials`. It should report `OK`
 4. Staging reconnects automatically within two minutes
 
