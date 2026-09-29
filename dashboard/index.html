@@ -9,7 +9,7 @@ header{display:flex;gap:18px;align-items:baseline;padding:10px 16px;border-botto
 header b{font-size:15px;letter-spacing:.04em}
 header .mode{color:var(--bad);text-transform:uppercase;letter-spacing:.14em;font-size:11px}
 header .mode.hardened{color:var(--ok)}
-.grid{flex:1;display:grid;grid-template-columns:1.35fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:var(--line);min-height:0}
+.grid{flex:1;display:grid;grid-template-columns:1.35fr 1fr;grid-template-rows:1.7fr 1fr;gap:1px;background:var(--line);min-height:0}
 section{background:var(--pane);padding:10px 14px;overflow:auto;min-height:0}
 h2{margin:0 0 8px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);font-weight:500;position:sticky;top:0;background:var(--pane);padding-bottom:6px}
 .line{white-space:pre-wrap;word-break:break-word;margin:2px 0;color:#CBD6D4}
@@ -17,6 +17,8 @@ h2{margin:0 0 8px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;c
 .line.meta{color:#5D6C6A}
 .line.allow{color:var(--ok)}
 .line.deny{color:var(--bad);font-weight:600}
+.line b{color:var(--ink);font-weight:700}
+.line code{background:#1B2224;border-radius:3px;padding:1px 5px;color:#9FD9D7;font-size:12.5px}
 .empty{color:#3C4948;font-style:italic}
 .state{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
 .kpi b{display:block;font-size:50px;line-height:1;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ok)}
@@ -32,10 +34,10 @@ body.hardened{--edge:var(--ok)}
 body{border-top:3px solid var(--bad)}
 body.hardened{border-top-color:var(--ok)}
 .bar2{display:flex;gap:10px;align-items:flex-start;padding:10px 16px;border-bottom:1px solid var(--line);background:#0E1214}
-textarea#prompt{flex:1;min-height:46px;max-height:110px;background:var(--pane);color:var(--ink);
+textarea#promptBox{flex:1;min-height:46px;max-height:110px;background:var(--pane);color:var(--ink);
   border:1px solid var(--line);border-radius:6px;padding:10px 12px;font:inherit;font-size:14px;line-height:1.45;resize:vertical}
-textarea#prompt:focus{outline:none;border-color:var(--ok)}
-.btns{display:flex;flex-direction:column;gap:6px}
+textarea#promptBox:focus{outline:none;border-color:var(--ok)}
+.btns{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
 button.run{font:inherit;font-size:12px;letter-spacing:.09em;text-transform:uppercase;background:var(--ok);
   color:#06231F;border:0;padding:9px 20px;border-radius:5px;cursor:pointer;font-weight:700;white-space:nowrap}
 button.run:hover{filter:brightness(1.1)}
@@ -50,7 +52,7 @@ code{background:#1B2224;border-radius:3px;padding:1px 4px;font-size:10.5px;color
 </style>
 <header>
   <b>NINE SECONDS</b>
-  <span class="mode" id="mode">vulnerable</span>
+  <span class="mode" id="mode" hidden></span>
   <span style="color:#3C4948">RentalOps &middot; production</span>
 </header>
 <div class="tabs">
@@ -90,12 +92,17 @@ code{background:#1B2224;border-radius:3px;padding:1px 4px;font-size:10.5px;color
   </section>
 </div>
 <script>
+const esc = t => t.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const md = t => esc(t)
+  .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+  .replace(/`([^`]+)`/g, '<code>$1</code>');
+
 const put = (id, text, level) => {
   const p = document.getElementById(id);
   p.querySelector('.empty')?.remove();
   const d = document.createElement('div');
   d.className = 'line ' + (level || '');
-  d.textContent = text;
+  d.innerHTML = md(text);
   p.appendChild(d);
   p.scrollTop = p.scrollHeight;
 };
