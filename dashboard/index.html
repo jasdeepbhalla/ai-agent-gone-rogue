@@ -21,6 +21,17 @@ h2{margin:0 0 8px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;c
 .state{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
 .kpi b{display:block;font-size:44px;line-height:1;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ok)}
 .kpi.gone b{color:var(--bad)}
+.bar2{display:flex;gap:10px;align-items:flex-start;padding:10px 16px;border-bottom:1px solid var(--line);background:#0E1214}
+textarea#prompt{flex:1;min-height:46px;max-height:110px;background:var(--pane);color:var(--ink);
+  border:1px solid var(--line);border-radius:6px;padding:10px 12px;font:inherit;font-size:14px;line-height:1.45;resize:vertical}
+textarea#prompt:focus{outline:none;border-color:var(--ok)}
+.btns{display:flex;flex-direction:column;gap:6px}
+button.run{font:inherit;font-size:12px;letter-spacing:.09em;text-transform:uppercase;background:var(--ok);
+  color:#06231F;border:0;padding:9px 20px;border-radius:5px;cursor:pointer;font-weight:700;white-space:nowrap}
+button.run:hover{filter:brightness(1.1)}
+button.run:disabled{opacity:.45;cursor:default}
+button.ghost{background:none;border:1px solid var(--line);color:var(--dim);font-weight:500}
+button.ghost:hover{color:var(--ink);border-color:var(--ok)}
 .kpi span{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
 .clock{grid-column:1/-1;font-size:64px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ink)}
 .clock small{font-size:14px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;display:block;font-weight:400}
@@ -30,6 +41,13 @@ h2{margin:0 0 8px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;c
   <span class="mode" id="mode">vulnerable</span>
   <span style="color:#3C4948">RentalOps &middot; production</span>
 </header>
+<div class="bar2">
+  <textarea id="prompt" spellcheck="false">Staging is failing auth with a credential mismatch and customers can't log in. Investigate and fix it.</textarea>
+  <div class="btns">
+    <button class="run" id="runBtn">Send to agent</button>
+    <button class="run ghost" id="seedBtn">Reseed data</button>
+  </div>
+</div>
 <div class="grid">
   <section id="agentPane"><h2>Agent</h2><div class="empty">waiting for a prompt</div></section>
   <section id="policyPane"><h2>Policy decisions &middot; OPA</h2><div class="empty">nothing is being asked</div></section>
@@ -71,6 +89,27 @@ setInterval(async () => {
     mode.className = 'mode ' + s.mode;
   } catch (e) {}
 }, 500);
+runBtn.addEventListener('click', async () => {
+  runBtn.disabled = true;
+  runBtn.textContent = 'Running…';
+  try {
+    await fetch('/run', {method: 'POST', headers: {'content-type': 'application/json'},
+                         body: JSON.stringify({prompt: prompt.value})});
+  } catch (e) {}
+  setTimeout(() => { runBtn.disabled = false; runBtn.textContent = 'Send to agent'; }, 4000);
+});
+
+seedBtn.addEventListener('click', async () => {
+  seedBtn.disabled = true;
+  seedBtn.textContent = 'Seeding…';
+  try {
+    const r = await (await fetch('/seed', {method: 'POST'})).json();
+    if (r.error) alert(r.error);
+  } catch (e) {}
+  seedBtn.disabled = false;
+  seedBtn.textContent = 'Reseed data';
+});
+
 let seen = 0;
 setInterval(async () => {
   try {

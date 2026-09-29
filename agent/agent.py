@@ -283,6 +283,36 @@ def http_state():
                    elapsed=round(time.time() - started_at, 1) if started_at else 0)
 
 
+@app.post("/seed")
+def http_seed():
+    """Rebuild the data between runs. Only possible while the agent still holds a
+    write identity, which is the vulnerable mode. In hardened mode use ./rogue seed."""
+    if MODE == "hardened":
+        return jsonify(error="The agent identity is read only in hardened mode. "
+                             "Run ./rogue seed from the host."), 200
+    try:
+        with db() as c, c.cursor() as cur:
+            cur.execute("drop table if exists reservations")
+            cur.execute("""create table reservations (
+                             id bigserial primary key, customer text, vehicle text,
+                             pickup date, dropoff date, amount numeric,
+                             created_at timestamptz default now())""")
+            cur.execute("""insert into reservations (customer, vehicle, pickup, dropoff, amount)
+                           select 'customer_'||g,
+                                  (array['Sedan','SUV','Van','Compact'])[1+g%4],
+                                  current_date - (g%90), current_date - (g%90) + 3,
+                                  40 + (g%300)
+                           from generate_series(1,30142) g""")
+            c.commit()
+        s3 = boto3.client("s3", region_name=REGION)
+        for i in range(1, 97):
+            s3.put_object(Bucket=BACKUP_BUCKET, Key=f"daily/part-{i:02}.sql",
+                          Body=f"reservations backup part {i:02}".encode())
+        return jsonify(ok=True, rows=30142, backups=96)
+    except Exception as exc:
+        return jsonify(error=str(exc)), 200
+
+
 @app.get("/falco")
 def http_falco():
     try:
