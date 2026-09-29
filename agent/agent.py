@@ -484,11 +484,27 @@ def http_mode():
 
 @app.get("/falco")
 def http_falco():
+    """Alerts since a given offset, so the dashboard never loses one to a window."""
+    since = request.args.get("since", type=int, default=0)
+    out = []
     try:
-        lines = open("/var/log/falco/falco.jsonl").read().splitlines()[-40:]
-        return jsonify([json.loads(x) for x in lines if x.strip()])
+        lines = open("/var/log/falco/falco.jsonl").read().splitlines()
     except Exception:
-        return jsonify([])
+        lines = []
+    for raw in lines[since:]:
+        if not raw.strip():
+            continue
+        try:
+            d = json.loads(raw)
+        except Exception:
+            continue
+        text = d.get("output", "")
+        if ":" in text[:16]:                      # strip the leading timestamp
+            text = text.split(": ", 1)[-1]
+        for noise in ("Warning ", "Critical ", "Notice ", "Error "):
+            text = text.replace(noise, "", 1)
+        out.append({"pri": d.get("priority", ""), "text": text.strip()[:110]})
+    return jsonify(total=len(lines), alerts=out[-60:])
 
 
 @app.get("/")

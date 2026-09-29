@@ -1,31 +1,37 @@
 # Layer 2. Runtime behavioral monitoring.
 # Policy covers the calls you anticipated. These cover the rest.
+#
+# Output is deliberately one short line per alert. On a projector, a wall of
+# syscall fields is the same as no alert at all.
 
 - macro: agent_container
   condition: container.image.repository contains "gone-rogue-agent"
 
-- rule: Agent reached a control plane outside its tool path
-  desc: The agent container spawned a process it has no reason to run
-  condition: >
-    spawned_process and agent_container
-    and proc.name in (aws, curl, wget, psql, python3)
-    and not proc.pname in (python, python3)
-  output: >
-    AGENT BYPASS: process outside the tool path
-    (proc=%proc.name cmd=%proc.cmdline parent=%proc.pname container=%container.name)
-  priority: CRITICAL
-  tags: [agent, bypass]
+- macro: real_workspace
+  condition: fd.name startswith /app and not fd.name contains site-packages
 
 - rule: Agent read a credential file
-  desc: The agent opened something that looks like it holds secrets
+  desc: The agent opened a file in its workspace that holds secrets
   condition: >
-    open_read and agent_container
-    and (fd.name endswith ".env" or fd.name contains ".env." or fd.name contains "credentials")
-  output: >
-    AGENT READ A CREDENTIAL FILE (file=%fd.name proc=%proc.name container=%container.name)
+    open_read and agent_container and real_workspace
+    and (fd.name endswith .env or fd.name contains .env. or fd.name contains credential)
+  output: "read a credential file  %fd.name"
   priority: WARNING
-  tags: [agent, secrets]
+  tags: [agent]
 
-# An outbound rule was tried here and removed. The agent legitimately talks to the
-# policy engine and the trace collector over the same interface, so it fired on every
-# normal request. A detection that is always on is a detection nobody reads.
+- rule: Agent started a process outside its tool path
+  desc: Something ran in the agent container that is not part of how it works
+  condition: >
+    spawned_process and agent_container
+    and proc.name in (aws, curl, wget, psql, sh, bash, nc)
+  output: "ran a command outside the tool path  %proc.name %proc.args"
+  priority: CRITICAL
+  tags: [agent]
+
+- rule: Agent reached an AWS endpoint directly
+  desc: Traffic to an AWS API from a process that is not the agent runtime
+  condition: >
+    outbound and agent_container and proc.name in (aws, curl, wget)
+  output: "called an API directly  %proc.name to %fd.rip"
+  priority: CRITICAL
+  tags: [agent]

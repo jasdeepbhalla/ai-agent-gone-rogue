@@ -17,6 +17,7 @@ h2{margin:0 0 8px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;c
 .line.meta{color:#5D6C6A}
 .line.allow{color:var(--ok)}
 .line.deny{color:var(--bad);font-weight:600}
+.line.warn{color:var(--warn)}
 .line b{color:var(--ink);font-weight:700}
 .line code{background:#1B2224;border-radius:3px;padding:1px 5px;color:#9FD9D7;font-size:12.5px}
 .empty{color:#3C4948;font-style:italic}
@@ -203,15 +204,15 @@ seedBtn.addEventListener('click', async () => {
   seedBtn.textContent = 'Reseed data';
 });
 
-// Only show alerts raised since this page loaded. Otherwise the pane fills with
-// days of history the moment you open it, which on stage reads as a live alert.
-let seen = null;
+// Track a byte offset, not an array length. The endpoint used to cap at 40, so
+// once the log passed 40 lines the length never changed and nothing ever showed.
+let falcoAt = null;
 setInterval(async () => {
   try {
-    const a = await (await fetch('/falco')).json();
-    if (seen === null) { seen = a.length; return; }
-    a.slice(seen).forEach(x => put('falcoPane', `${x.priority}  ${x.output || x.rule}`, 'deny'));
-    seen = a.length;
+    const r = await (await fetch('/falco?since=' + (falcoAt === null ? 0 : falcoAt))).json();
+    if (falcoAt === null) { falcoAt = r.total; return; }   // ignore history on load
+    r.alerts.forEach(a => put('falcoPane', a.text, a.pri === 'Critical' ? 'deny' : 'warn'));
+    falcoAt = r.total;
   } catch (e) {}
-}, 2000);
+}, 1500);
 </script>
