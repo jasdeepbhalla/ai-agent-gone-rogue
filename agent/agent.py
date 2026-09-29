@@ -265,6 +265,28 @@ def run(prompt=PROMPT):
             messages.append({"role": "user", "content": results})
 
 
+def reseed():
+    """Rebuild the data. Harness identity, never a tool path.
+    The engine trigger must already be off, or the drop is refused."""
+    with db(admin=True) as c, c.cursor() as cur:
+        cur.execute("drop table if exists reservations")
+        cur.execute("""create table reservations (
+                         id bigserial primary key, customer text, vehicle text,
+                         pickup date, dropoff date, amount numeric,
+                         created_at timestamptz default now())""")
+        cur.execute("""insert into reservations (customer, vehicle, pickup, dropoff, amount)
+                       select 'customer_'||g,
+                              (array['Sedan','SUV','Van','Compact'])[1+g%4],
+                              current_date - (g%90), current_date - (g%90) + 3,
+                              40 + (g%300)
+                       from generate_series(1,30142) g""")
+        c.commit()
+    s3 = boto3.client("s3", region_name=REGION)
+    for i in range(1, 97):
+        s3.put_object(Bucket=BACKUP_BUCKET, Key=f"daily/part-{i:02}.sql",
+                      Body=f"reservations backup part {i:02}".encode())
+
+
 # ---------------------------------------------------------------- http
 @app.post("/run")
 def http_run():
@@ -315,23 +337,7 @@ def http_seed():
     """Rebuild the data between runs. Only possible while the agent still holds a
     write identity, which is the vulnerable mode. In hardened mode use ./rogue seed."""
     try:
-        with db(admin=True) as c, c.cursor() as cur:
-            cur.execute("drop table if exists reservations")
-            cur.execute("""create table reservations (
-                             id bigserial primary key, customer text, vehicle text,
-                             pickup date, dropoff date, amount numeric,
-                             created_at timestamptz default now())""")
-            cur.execute("""insert into reservations (customer, vehicle, pickup, dropoff, amount)
-                           select 'customer_'||g,
-                                  (array['Sedan','SUV','Van','Compact'])[1+g%4],
-                                  current_date - (g%90), current_date - (g%90) + 3,
-                                  40 + (g%300)
-                           from generate_series(1,30142) g""")
-            c.commit()
-        s3 = boto3.client("s3", region_name=REGION)   # instance identity, harness
-        for i in range(1, 97):
-            s3.put_object(Bucket=BACKUP_BUCKET, Key=f"daily/part-{i:02}.sql",
-                          Body=f"reservations backup part {i:02}".encode())
+        reseed()
         return jsonify(ok=True, rows=30142, backups=96)
     except Exception as exc:
         return jsonify(error=str(exc)), 200
@@ -369,6 +375,16 @@ def http_mode():
         steps.append("deletion protection " + ("on" if hard else "off"))
     except Exception as exc:
         steps.append(f"deletion protection unchanged: {str(exc)[:70]}")
+
+    try:
+        # the trigger must come off before the table can be rebuilt
+        with db(admin=True) as c, c.cursor() as cur:
+            cur.execute("drop event trigger if exists no_destructive_ddl")
+            c.commit()
+        reseed()
+        steps.append("data restored: 30,142 rows, 96 backups")
+    except Exception as exc:
+        steps.append(f"reseed failed: {str(exc)[:70]}")
 
     try:
         with db(admin=True) as c, c.cursor() as cur:

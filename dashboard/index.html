@@ -123,7 +123,7 @@ const paintMode = m => {
 const setMode = async m => {
   mVuln.disabled = mHard.disabled = true;
   const prev = mVuln.textContent, prevH = mHard.textContent;
-  (m === 'hardened' ? mHard : mVuln).textContent = 'Switching…';
+  (m === 'hardened' ? mHard : mVuln).textContent = 'Switching and restoring…';
   try {
     const r = await (await fetch('/mode', {method: 'POST', headers: {'content-type': 'application/json'},
                                            body: JSON.stringify({mode: m})})).json();
