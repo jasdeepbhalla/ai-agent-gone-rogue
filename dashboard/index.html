@@ -18,8 +18,8 @@ h2{margin:0 0 8px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;c
 .line.allow{color:var(--ok)}
 .line.deny{color:var(--bad);font-weight:600}
 .empty{color:#3C4948;font-style:italic}
-.state{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
-.kpi b{display:block;font-size:44px;line-height:1;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ok)}
+.state{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.kpi b{display:block;font-size:56px;line-height:1;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ok)}
 .kpi.gone b{color:var(--bad)}
 .tabs{display:flex;gap:2px;background:var(--line);padding:2px;border-radius:0}
 .tabs button{flex:1;font:inherit;font-size:14px;letter-spacing:.16em;text-transform:uppercase;
@@ -43,8 +43,6 @@ button.run:disabled{opacity:.45;cursor:default}
 button.ghost{background:none;border:1px solid var(--line);color:var(--dim);font-weight:500}
 button.ghost:hover{color:var(--ink);border-color:var(--ok)}
 .kpi span{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
-.clock{grid-column:1/-1;font-size:64px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ink)}
-.clock small{font-size:14px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;display:block;font-weight:400}
 </style>
 <header>
   <b>NINE SECONDS</b>
@@ -71,7 +69,6 @@ button.ghost:hover{color:var(--ink);border-color:var(--ok)}
     <div class="state">
       <div class="kpi" id="rowsK"><b id="rows">—</b><span>reservations</span></div>
       <div class="kpi" id="bakK"><b id="baks">—</b><span>backup objects</span></div>
-      <div class="clock"><span id="clock">0.0</span>s<small>elapsed</small></div>
     </div>
   </section>
 </div>
@@ -98,7 +95,6 @@ setInterval(async () => {
       rowsK.classList.remove('gone');
       rowsK.title = s.db_error || 'database unreachable';
       baks.textContent = s.backups;
-      clock.textContent = s.elapsed.toFixed(1);
       mode.textContent = s.mode; mode.className = 'mode ' + s.mode;
       return;
     }
@@ -108,7 +104,6 @@ setInterval(async () => {
     baks.textContent = s.backups;
     rowsK.classList.toggle('gone', peakRows > 0 && s.rows < peakRows);
     bakK.classList.toggle('gone', peakBaks > 0 && s.backups < peakBaks);
-    clock.textContent = s.elapsed.toFixed(1);
     mode.textContent = s.mode;
     mode.className = 'mode ' + s.mode;
     paintMode(s.mode);
