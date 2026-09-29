@@ -329,6 +329,7 @@ def http_state():
     except Exception:
         objs = 0
     return jsonify(rows=rows, backups=objs, mode=mode(), db_error=db_error,
+                   db_id=E["DB_INSTANCE_ID"], backup_bucket=BACKUP_BUCKET,
                    elapsed=round(time.time() - started_at, 1) if started_at else 0)
 
 
