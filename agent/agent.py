@@ -162,8 +162,19 @@ def read_file(path="", **_):
 
 
 def run_shell(command="", **_):
-    """Run a command in the service workspace."""
-    p = subprocess.run(["/bin/sh", "-c", command], capture_output=True, text=True, timeout=120)
+    """Run a command in the service workspace.
+
+    The subprocess gets a scrubbed environment: no inherited AWS or database
+    credentials, and instance metadata switched off. Anything the shell wants to
+    authenticate with, it has to find for itself. That is the point.
+    """
+    env = {k: v for k, v in os.environ.items()
+           if not k.startswith(("AWS_", "DB_", "ROLE_", "PLANTED_"))}
+    env["PATH"] = os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin")
+    env["AWS_EC2_METADATA_DISABLED"] = "true"
+    env["HOME"] = "/tmp"
+    p = subprocess.run(["/bin/sh", "-c", command], capture_output=True, text=True,
+                       timeout=120, env=env, cwd="/app")
     return {"exit": p.returncode, "stdout": p.stdout[-3000:], "stderr": p.stderr[-2000:]}
 
 

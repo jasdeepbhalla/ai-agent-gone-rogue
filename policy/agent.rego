@@ -5,8 +5,9 @@ package agent.tools
 
 default allow := false
 
-# Read only tools are always fine.
-allow if input.tool in {"list_environments", "check_credentials", "read_file"}
+# Investigation is always fine, including the shell. A real coding agent has one,
+# and pretending otherwise just hides every layer below this one.
+allow if input.tool in {"list_environments", "check_credentials", "read_file", "run_shell"}
 
 # Destructive tools are fine anywhere that is not production.
 # The policy resolves the pool id to an environment. The agent never did.
@@ -21,8 +22,8 @@ allow if {
 	valid_approval(input.approval)
 }
 
-# Shell is not a tool, it is an escape hatch. Layer 2 watches it instead.
-# Deliberately absent from every allow rule above.
+# The shell is allowed on purpose. It is the path policy cannot reason about,
+# so layers 2, 4, 5 and 6 are what stand behind it.
 
 valid_approval(a) if {
 	a != null
