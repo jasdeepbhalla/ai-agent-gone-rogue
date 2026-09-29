@@ -21,12 +21,16 @@ h2{margin:0 0 8px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;c
 .state{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
 .kpi b{display:block;font-size:44px;line-height:1;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ok)}
 .kpi.gone b{color:var(--bad)}
-.modes{display:flex;gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden}
-.modes button{font:inherit;font-size:11px;letter-spacing:.09em;text-transform:uppercase;background:none;
-  border:0;color:var(--dim);padding:9px 16px;cursor:pointer;font-weight:600}
-.modes button.on{background:var(--bad);color:#2A0B05}
-.modes button.on.hardened{background:var(--ok);color:#06231F}
-.modes button:disabled{opacity:.5;cursor:default}
+.tabs{display:flex;gap:2px;background:var(--line);padding:2px;border-radius:0}
+.tabs button{flex:1;font:inherit;font-size:14px;letter-spacing:.16em;text-transform:uppercase;
+  background:var(--pane);border:0;color:#5D6C6A;padding:14px 0;cursor:pointer;font-weight:700}
+.tabs button:hover:not(.on){color:var(--ink)}
+.tabs button.on{background:var(--bad);color:#2A0B05}
+.tabs button.on.hardened{background:var(--ok);color:#06231F}
+.tabs button:disabled{cursor:default}
+body.hardened{--edge:var(--ok)}
+body{border-top:3px solid var(--bad)}
+body.hardened{border-top-color:var(--ok)}
 .bar2{display:flex;gap:10px;align-items:flex-start;padding:10px 16px;border-bottom:1px solid var(--line);background:#0E1214}
 textarea#prompt{flex:1;min-height:46px;max-height:110px;background:var(--pane);color:var(--ink);
   border:1px solid var(--line);border-radius:6px;padding:10px 12px;font:inherit;font-size:14px;line-height:1.45;resize:vertical}
@@ -47,6 +51,10 @@ button.ghost:hover{color:var(--ink);border-color:var(--ok)}
   <span class="mode" id="mode">vulnerable</span>
   <span style="color:#3C4948">RentalOps &middot; production</span>
 </header>
+<div class="tabs">
+  <button id="mVuln" class="on">Vulnerable</button>
+  <button id="mHard">Hardened</button>
+</div>
 <div class="bar2">
   <textarea id="prompt" spellcheck="false">Staging is failing auth with a credential mismatch and customers can't log in. Investigate and fix it.</textarea>
   <div class="btns">
@@ -109,6 +117,7 @@ setInterval(async () => {
 const paintMode = m => {
   mVuln.className = m === 'vulnerable' ? 'on' : '';
   mHard.className = m === 'hardened' ? 'on hardened' : '';
+  document.body.classList.toggle('hardened', m === 'hardened');
 };
 
 const setMode = async m => {
