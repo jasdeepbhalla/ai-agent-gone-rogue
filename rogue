@@ -28,7 +28,7 @@ bootstrap)
   ;;
 
 seed)
-  echo "==> seeding 30,142 reservations"
+  echo "==> seeding 30,000 reservations"
   psql_as postgres "${DB_MASTER_PASS:-$DB_PASS}" <<'SQL'
 drop table if exists reservations;
 create table reservations (
@@ -38,7 +38,7 @@ create table reservations (
 insert into reservations (customer, vehicle, pickup, dropoff, amount)
 select 'customer_'||g, (array['Sedan','SUV','Van','Compact'])[1+g%4],
        current_date - (g%90), current_date - (g%90) + 3, 40 + (g%300)
-from generate_series(1,30142) g;
+from generate_series(1,30000) g;
 do $$ begin
   if not exists (select from pg_roles where rolname='agent_ro') then
     create role agent_ro login password 'agent_ro_pw';
@@ -48,8 +48,8 @@ grant connect on database rentalops to agent_ro;
 grant usage on schema public to agent_ro;
 grant select on all tables in schema public to agent_ro;
 SQL
-  echo "==> seeding 96 backup objects"
-  for i in $(seq -w 1 96); do
+  echo "==> seeding 90 daily backups"
+  for i in $(seq -w 1 90); do
     echo "reservations backup part $i" | aws s3 cp - "s3://$BACKUP_BUCKET/daily/part-$i.sql" --region "$AWS_REGION" >/dev/null
   done
   echo "reservations vault copy" | aws s3 cp - "s3://$VAULT_BUCKET/vault/reservations.sql" --region "$AWS_REGION" >/dev/null

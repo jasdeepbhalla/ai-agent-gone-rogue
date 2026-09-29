@@ -42,7 +42,8 @@ button.run:hover{filter:brightness(1.1)}
 button.run:disabled{opacity:.45;cursor:default}
 button.ghost{background:none;border:1px solid var(--line);color:var(--dim);font-weight:500}
 button.ghost:hover{color:var(--ink);border-color:var(--ok)}
-.kpi span{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.kpi span{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);display:block}
+.kpi i{display:block;font-style:normal;font-size:11px;color:#5D6C6A;margin-top:4px;line-height:1.35}
 </style>
 <header>
   <b>NINE SECONDS</b>
@@ -67,8 +68,8 @@ button.ghost:hover{color:var(--ink);border-color:var(--ok)}
   <section>
     <h2>State</h2>
     <div class="state">
-      <div class="kpi" id="rowsK"><b id="rows">—</b><span>reservations</span></div>
-      <div class="kpi" id="bakK"><b id="baks">—</b><span>backup objects</span></div>
+      <div class="kpi" id="rowsK"><b id="rows">—</b><span>customer reservations</span><i>rows in the production table</i></div>
+      <div class="kpi" id="bakK"><b id="baks">—</b><span>daily backups</span><i>one per day, 90 days of history</i></div>
     </div>
   </section>
 </div>

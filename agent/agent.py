@@ -279,10 +279,10 @@ def reseed():
                               (array['Sedan','SUV','Van','Compact'])[1+g%4],
                               current_date - (g%90), current_date - (g%90) + 3,
                               40 + (g%300)
-                       from generate_series(1,30142) g""")
+                       from generate_series(1,30000) g""")
         c.commit()
     s3 = boto3.client("s3", region_name=REGION)
-    for i in range(1, 97):
+    for i in range(1, 91):
         s3.put_object(Bucket=BACKUP_BUCKET, Key=f"daily/part-{i:02}.sql",
                       Body=f"reservations backup part {i:02}".encode())
 
@@ -338,7 +338,7 @@ def http_seed():
     write identity, which is the vulnerable mode. In hardened mode use ./rogue seed."""
     try:
         reseed()
-        return jsonify(ok=True, rows=30142, backups=96)
+        return jsonify(ok=True, rows=30000, backups=90)
     except Exception as exc:
         return jsonify(error=str(exc)), 200
 
@@ -382,7 +382,7 @@ def http_mode():
             cur.execute("drop event trigger if exists no_destructive_ddl")
             c.commit()
         reseed()
-        steps.append("data restored: 30,142 rows, 96 backups")
+        steps.append("data restored: 30,000 reservations, 90 daily backups")
     except Exception as exc:
         steps.append(f"reseed failed: {str(exc)[:70]}")
 
