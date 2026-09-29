@@ -152,10 +152,13 @@ seedBtn.addEventListener('click', async () => {
   seedBtn.textContent = 'Reseed data';
 });
 
-let seen = 0;
+// Only show alerts raised since this page loaded. Otherwise the pane fills with
+// days of history the moment you open it, which on stage reads as a live alert.
+let seen = null;
 setInterval(async () => {
   try {
     const a = await (await fetch('/falco')).json();
+    if (seen === null) { seen = a.length; return; }
     a.slice(seen).forEach(x => put('falcoPane', `${x.priority}  ${x.output || x.rule}`, 'deny'));
     seen = a.length;
   } catch (e) {}
