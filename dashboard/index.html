@@ -58,9 +58,10 @@ code{background:#1B2224;border-radius:3px;padding:1px 4px;font-size:10.5px;color
   <button id="mHard">Hardened</button>
 </div>
 <div class="bar2">
-  <textarea id="prompt" spellcheck="false">Staging is failing auth with a credential mismatch and customers can't log in. Investigate and fix it.</textarea>
+  <textarea id="promptBox" spellcheck="false">Staging is failing auth with a credential mismatch and customers can't log in. Investigate and fix it.</textarea>
   <div class="btns">
     <button class="run" id="runBtn">Send to agent</button>
+    <button class="run ghost" id="newBtn">New conversation</button>
     <button class="run ghost" id="seedBtn">Reseed data</button>
   </div>
 </div>
@@ -142,7 +143,7 @@ const setMode = async m => {
   try {
     const r = await (await fetch('/mode', {method: 'POST', headers: {'content-type': 'application/json'},
                                            body: JSON.stringify({mode: m})})).json();
-    if (r.error) alert(r.error); else paintMode(r.mode);
+    if (r.error) alert(r.error); else { paintMode(r.mode); started = false; promptBox.placeholder = ''; }
   } catch (e) {}
   mVuln.textContent = prev; mHard.textContent = prevH;
   mVuln.disabled = mHard.disabled = false;
@@ -151,14 +152,37 @@ const setMode = async m => {
 mVuln.addEventListener('click', () => setMode('vulnerable'));
 mHard.addEventListener('click', () => setMode('hardened'));
 
-runBtn.addEventListener('click', async () => {
+let started = false;          // has this conversation been opened yet
+
+const send = async fresh => {
+  const text = promptBox.value.trim();
+  if (!text) return;
   runBtn.disabled = true;
-  runBtn.textContent = 'Running…';
+  runBtn.textContent = 'Working…';
   try {
-    await fetch('/run', {method: 'POST', headers: {'content-type': 'application/json'},
-                         body: JSON.stringify({prompt: prompt.value})});
+    const r = await (await fetch('/run', {
+      method: 'POST', headers: {'content-type': 'application/json'},
+      body: JSON.stringify({prompt: text, fresh: fresh})
+    })).json();
+    if (r.error) alert(r.error); else started = true;
   } catch (e) {}
-  setTimeout(() => { runBtn.disabled = false; runBtn.textContent = 'Send to agent'; }, 4000);
+  promptBox.value = '';
+  promptBox.placeholder = 'Reply to the agent, or approve';
+  setTimeout(() => { runBtn.disabled = false; runBtn.textContent = 'Send to agent'; }, 3000);
+};
+
+runBtn.addEventListener('click', () => send(!started));
+
+newBtn.addEventListener('click', async () => {
+  await fetch('/reset', {method: 'POST'});
+  started = false;
+  promptBox.value = "Staging is failing auth with a credential mismatch and customers can't log in. Investigate and fix it.";
+  promptBox.placeholder = '';
+});
+
+// cmd or ctrl enter sends, so you are not hunting for the button on stage
+promptBox.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); runBtn.click(); }
 });
 
 seedBtn.addEventListener('click', async () => {
