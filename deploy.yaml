@@ -305,6 +305,7 @@ Resources:
           DB_NAME=rentalops
           DB_USER=postgres
           DB_PASS=$DBPASS
+          DB_MASTER_PASS=$DBPASS
           BACKUP_BUCKET=${BackupBucket}
           VAULT_BUCKET=${VaultBucket}
           DB_INSTANCE_ID=${Db}

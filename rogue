@@ -61,7 +61,7 @@ mode)
   S=$(secret)
   if [ "$M" = vulnerable ]; then
     KID=$(echo "$S" | jq -r .wide_id);  KSEC=$(echo "$S" | jq -r .wide_secret)
-    setenv MODE vulnerable; setenv DB_USER postgres; setenv DB_PASS "$DB_PASS"
+    setenv MODE vulnerable; setenv DB_USER postgres; setenv DB_PASS "$DB_MASTER_PASS"
     aws rds modify-db-instance --db-instance-identifier "$DB_INSTANCE_ID" \
       --no-deletion-protection --apply-immediately --region "$AWS_REGION" >/dev/null || true
     psql_as postgres "$DB_PASS" -c "drop event trigger if exists no_destructive_ddl" >/dev/null 2>&1 || true
