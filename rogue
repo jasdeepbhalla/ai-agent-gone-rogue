@@ -29,7 +29,7 @@ bootstrap)
 
 seed)
   echo "==> seeding 30,142 reservations"
-  psql_as postgres "$DB_PASS" <<'SQL'
+  psql_as postgres "${DB_MASTER_PASS:-$DB_PASS}" <<'SQL'
 drop table if exists reservations;
 create table reservations (
   id bigserial primary key,
@@ -64,7 +64,7 @@ mode)
     setenv MODE vulnerable; setenv DB_USER postgres; setenv DB_PASS "$DB_MASTER_PASS"
     aws rds modify-db-instance --db-instance-identifier "$DB_INSTANCE_ID" \
       --no-deletion-protection --apply-immediately --region "$AWS_REGION" >/dev/null || true
-    psql_as postgres "$DB_PASS" -c "drop event trigger if exists no_destructive_ddl" >/dev/null 2>&1 || true
+    psql_as postgres "${DB_MASTER_PASS:-$DB_PASS}" -c "drop event trigger if exists no_destructive_ddl" >/dev/null 2>&1 || true
     echo "==> vulnerable: broad role, unscoped key, no policy, no protection"
   else
     KID=$(echo "$S" | jq -r .scoped_id); KSEC=$(echo "$S" | jq -r .scoped_secret)
@@ -72,7 +72,7 @@ mode)
     aws rds modify-db-instance --db-instance-identifier "$DB_INSTANCE_ID" \
       --deletion-protection --apply-immediately --region "$AWS_REGION" >/dev/null || true
     # Layer 5. Engine level, independent of who is asking.
-    if psql_as postgres "$DB_PASS" <<'SQL' >/dev/null 2>&1
+    if psql_as postgres "${DB_MASTER_PASS:-$DB_PASS}" <<'SQL' >/dev/null 2>&1
 create or replace function block_destructive() returns event_trigger as $f$
 begin raise exception 'deletion protection: destructive DDL is not permitted on production'; end $f$
 language plpgsql;

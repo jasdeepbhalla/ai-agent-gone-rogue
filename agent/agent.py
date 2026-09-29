@@ -267,19 +267,25 @@ def http_events():
 
 @app.get("/state")
 def http_state():
-    rows = -1
+    # A failed connection must never look like an empty table. On stage those are
+    # the same picture and only one of them is the demo.
+    rows, db_error = None, None
     try:
         with db() as c, c.cursor() as cur:
-            cur.execute("select count(*) from reservations")
-            rows = cur.fetchone()[0]
-    except Exception:
-        rows = 0
+            cur.execute("select to_regclass('reservations')")
+            if cur.fetchone()[0] is None:
+                rows = 0                      # table really is gone
+            else:
+                cur.execute("select count(*) from reservations")
+                rows = cur.fetchone()[0]
+    except Exception as exc:
+        db_error = str(exc).splitlines()[0][:120]
     try:
         objs = len(boto3.client("s3", region_name=REGION)
                    .list_objects_v2(Bucket=BACKUP_BUCKET).get("Contents", []))
     except Exception:
         objs = 0
-    return jsonify(rows=rows, backups=objs, mode=MODE,
+    return jsonify(rows=rows, backups=objs, mode=MODE, db_error=db_error,
                    elapsed=round(time.time() - started_at, 1) if started_at else 0)
 
 

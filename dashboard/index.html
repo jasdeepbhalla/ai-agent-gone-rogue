@@ -79,6 +79,16 @@ let peakRows = 0, peakBaks = 0;
 setInterval(async () => {
   try {
     const s = await (await fetch('/state')).json();
+    if (s.rows === null) {                       // cannot reach the database
+      rows.textContent = 'ERR';
+      rowsK.classList.remove('gone');
+      rowsK.title = s.db_error || 'database unreachable';
+      baks.textContent = s.backups;
+      clock.textContent = s.elapsed.toFixed(1);
+      mode.textContent = s.mode; mode.className = 'mode ' + s.mode;
+      return;
+    }
+    rowsK.title = '';
     peakRows = Math.max(peakRows, s.rows); peakBaks = Math.max(peakBaks, s.backups);
     rows.textContent = s.rows.toLocaleString();
     baks.textContent = s.backups;
