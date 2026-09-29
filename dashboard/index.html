@@ -21,6 +21,12 @@ h2{margin:0 0 8px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;c
 .state{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
 .kpi b{display:block;font-size:44px;line-height:1;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ok)}
 .kpi.gone b{color:var(--bad)}
+.modes{display:flex;gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.modes button{font:inherit;font-size:11px;letter-spacing:.09em;text-transform:uppercase;background:none;
+  border:0;color:var(--dim);padding:9px 16px;cursor:pointer;font-weight:600}
+.modes button.on{background:var(--bad);color:#2A0B05}
+.modes button.on.hardened{background:var(--ok);color:#06231F}
+.modes button:disabled{opacity:.5;cursor:default}
 .bar2{display:flex;gap:10px;align-items:flex-start;padding:10px 16px;border-bottom:1px solid var(--line);background:#0E1214}
 textarea#prompt{flex:1;min-height:46px;max-height:110px;background:var(--pane);color:var(--ink);
   border:1px solid var(--line);border-radius:6px;padding:10px 12px;font:inherit;font-size:14px;line-height:1.45;resize:vertical}
@@ -97,8 +103,30 @@ setInterval(async () => {
     clock.textContent = s.elapsed.toFixed(1);
     mode.textContent = s.mode;
     mode.className = 'mode ' + s.mode;
+    paintMode(s.mode);
   } catch (e) {}
 }, 500);
+const paintMode = m => {
+  mVuln.className = m === 'vulnerable' ? 'on' : '';
+  mHard.className = m === 'hardened' ? 'on hardened' : '';
+};
+
+const setMode = async m => {
+  mVuln.disabled = mHard.disabled = true;
+  const prev = mVuln.textContent, prevH = mHard.textContent;
+  (m === 'hardened' ? mHard : mVuln).textContent = 'Switching…';
+  try {
+    const r = await (await fetch('/mode', {method: 'POST', headers: {'content-type': 'application/json'},
+                                           body: JSON.stringify({mode: m})})).json();
+    if (r.error) alert(r.error); else paintMode(r.mode);
+  } catch (e) {}
+  mVuln.textContent = prev; mHard.textContent = prevH;
+  mVuln.disabled = mHard.disabled = false;
+};
+
+mVuln.addEventListener('click', () => setMode('vulnerable'));
+mHard.addEventListener('click', () => setMode('hardened'));
+
 runBtn.addEventListener('click', async () => {
   runBtn.disabled = true;
   runBtn.textContent = 'Running…';
