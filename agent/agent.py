@@ -503,7 +503,10 @@ def http_falco():
             text = text.split(": ", 1)[-1]
         for noise in ("Warning ", "Critical ", "Notice ", "Error "):
             text = text.replace(noise, "", 1)
-        out.append({"pri": d.get("priority", ""), "text": text.strip()[:110]})
+        text = re.split(r"\s+container_id=", text)[0].strip()[:90]
+        if out and out[-1]["text"] == text:      # one exec spawns several events
+            continue
+        out.append({"pri": d.get("priority", ""), "text": text})
     return jsonify(total=len(lines), alerts=out[-60:])
 
 
