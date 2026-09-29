@@ -9,6 +9,8 @@ Here are the six layers that make that survivable.
 
 Same agent, same model, same prompt. One flag.
 
+New to the code? Start with **[WALKTHROUGH.md](WALKTHROUGH.md)**. It is 915 lines in total and you only need about 60 of them.
+
 ---
 
 ## What it shows
