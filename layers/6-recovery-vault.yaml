@@ -1,0 +1,21 @@
+# Layer 6. Recovery outside the trust boundary.
+# Excerpt from deploy.yaml. A copy of the data in a bucket the agent cannot
+# reach, that even its owner cannot delete early.
+#
+# Two independent guarantees:
+#   1. IAM: the hardened role carries an explicit Deny on this bucket (layer 4)
+#   2. S3 Object Lock in COMPLIANCE mode: nobody, including root, can delete
+#      an object before its retention expires
+
+VaultBucket:
+  Type: AWS::S3::Bucket
+  DeletionPolicy: Retain
+  Properties:
+    ObjectLockEnabled: true            # cannot be turned on after creation
+    VersioningConfiguration: {Status: Enabled}
+    ObjectLockConfiguration:
+      ObjectLockEnabled: Enabled
+      Rule:
+        DefaultRetention: {Mode: COMPLIANCE, Days: 1}
+    PublicAccessBlockConfiguration:
+      {BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true}

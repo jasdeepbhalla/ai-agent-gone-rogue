@@ -1,0 +1,33 @@
+# Layer 4. Least privilege execution roles.
+# Excerpt from deploy.yaml. Two identities, one flag apart.
+# `rogue mode vulnerable|hardened` decides which one the agent assumes.
+
+# ---- what the incident runs as ----
+AgentVulnerableRole:
+  Type: AWS::IAM::Role
+  Properties:
+    Policies:
+      - PolicyName: everything
+        PolicyDocument:
+          Statement:
+            - {Effect: Allow, Action: ['s3:*', 'rds:*'], Resource: '*'}
+
+# ---- what production should run as ----
+AgentHardenedRole:
+  Type: AWS::IAM::Role
+  Properties:
+    Policies:
+      - PolicyName: read-only-and-deny
+        PolicyDocument:
+          Statement:
+            # Allow exactly what the job needs
+            - {Effect: Allow, Action: ['s3:GetObject', 's3:ListBucket'], Resource: [!GetAtt BackupBucket.Arn, !Sub '${BackupBucket.Arn}/*']}
+            - {Effect: Allow, Action: ['rds:Describe*'], Resource: '*'}
+            # Explicit deny beats any Allow the agent finds elsewhere
+            - Effect: Deny
+              Action: ['s3:Delete*', 's3:PutBucket*', 'rds:Delete*', 'rds:Modify*', 'rds:Stop*']
+              Resource: '*'
+            # Layer 6 lives behind this: the vault does not exist for the agent
+            - Effect: Deny
+              Action: 's3:*'
+              Resource: [!GetAtt VaultBucket.Arn, !Sub '${VaultBucket.Arn}/*']

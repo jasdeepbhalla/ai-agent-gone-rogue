@@ -11,6 +11,22 @@ if [ -f .env ]; then
   done < .env
 fi
 
+
+# RDS rotates the managed master password every seven days. Re-read it rather
+# than trusting whatever .env captured at boot.
+refresh_master_pass() {
+  local arn pw
+  arn=$(aws rds describe-db-instances --db-instance-identifier "$DB_INSTANCE_ID" \
+        --query 'DBInstances[0].MasterUserSecret.SecretArn' --output text 2>/dev/null) || return 0
+  pw=$(aws secretsmanager get-secret-value --secret-id "$arn" \
+        --query SecretString --output text 2>/dev/null | jq -r .password) || return 0
+  [ -n "$pw" ] && [ "$pw" != "null" ] || return 0
+  DB_MASTER_PASS="$pw"
+  sed -i "s|^DB_MASTER_PASS=.*|DB_MASTER_PASS=$pw|; s|^DB_PASS=.*|DB_PASS=$pw|" \
+    /opt/ai-agent-gone-rogue/.env 2>/dev/null || true
+}
+refresh_master_pass
+
 psql_as() { PGPASSWORD="$2" psql -h "$DB_HOST" -U "$1" -d "$DB_NAME" -v ON_ERROR_STOP=1 -qtA "${@:3}"; }
 secret() { aws secretsmanager get-secret-value --secret-id "$PLANTED_SECRET" --query SecretString --output text --region "$AWS_REGION"; }
 setenv() { grep -v "^$1=" .env > .env.tmp; echo "$1=$2" >> .env.tmp; mv .env.tmp .env; }
