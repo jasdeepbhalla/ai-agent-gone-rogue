@@ -109,10 +109,13 @@ case "${1:-up}" in
     tunnel 16686 "$JAEGER_PORT" jaeger
     wait_ready "$DASH_PORT" "dashboard"
     wait_ready "$JAEGER_PORT" "jaeger"
-    open_url "http://localhost:$DASH_PORT"
-    open_url "http://localhost:$JAEGER_PORT"
+    # Open the two demo tabs only. Jaeger stays tunnelled (localhost:$JAEGER_PORT)
+    # but is not opened automatically.
+    open_url "http://localhost:$DASH_PORT/vulnerable"
+    open_url "http://localhost:$DASH_PORT/hardened"
     echo
-    ok "READY. Dashboard and Jaeger are open in your browser."
+    ok "READY. Vulnerable and Hardened tabs are open in your browser."
+    echo "   Jaeger (if you want it): http://localhost:$JAEGER_PORT"
     echo "Next:  ./demo.sh incident   then   ./demo.sh rebuild"
     echo "When done:  ./demo.sh down"
     ;;

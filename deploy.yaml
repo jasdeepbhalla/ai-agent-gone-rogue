@@ -417,7 +417,7 @@ Resources:
                 services:
                   opa:
                     image: openpolicyagent/opa:latest
-                    command: ["run", "--server", "--addr=0.0.0.0:8181", "--log-level=error", "/policy"]
+                    command: ["run", "--server", "--addr=0.0.0.0:8181", "--log-level=error", "--watch", "/policy/agent.rego"]
                     volumes: ["./policy:/policy:ro"]
 
                   jaeger:
@@ -769,6 +769,15 @@ Resources:
                                               current_date - (g%90), current_date - (g%90) + 3,
                                               40 + (g%300)
                                        from generate_series(1,1200) g""")
+                        # The hardened agent reads as agent_ro, and so does the dashboard in
+                        # hardened mode. Re-grant SELECT on the freshly created tables, or the
+                        # State pane shows "permission denied" after a reseed.
+                        cur.execute("do $$ begin if not exists (select from pg_roles where "
+                                    "rolname='agent_ro') then create role agent_ro login "
+                                    "password 'agent_ro_pw'; end if; end $$;")
+                        cur.execute(f"grant connect on database {E['DB_NAME']} to agent_ro")
+                        cur.execute("grant usage on schema public to agent_ro")
+                        cur.execute("grant select on reservations, reservations_staging to agent_ro")
                         c.commit()
                     s3 = boto3.client("s3", region_name=REGION)
                     for i in range(1, 91):
