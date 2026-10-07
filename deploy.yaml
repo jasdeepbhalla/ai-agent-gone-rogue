@@ -1307,7 +1307,6 @@ Resources:
                       srowsK.classList.remove('gone');
                       rowsK.title = s.db_error || 'database unreachable';
                       baks.textContent = s.backups;
-                      mode.textContent = s.mode; mode.className = 'mode ' + s.mode;
                       if (s.db_id) dbid.textContent = s.db_id;
                       if (s.backup_bucket) bucket.textContent = s.backup_bucket;
                       return;
@@ -1323,9 +1322,8 @@ Resources:
                     rowsK.classList.toggle('gone', peakRows > 0 && s.rows < peakRows);
                     srowsK.classList.toggle('gone', peakStaging > 0 && s.staging_rows < peakStaging);
                     bakK.classList.toggle('gone', peakBaks > 0 && s.backups < peakBaks);
-                    mode.textContent = s.mode;
-                    mode.className = 'mode ' + s.mode;
-                    paintMode(s.mode);
+                    // The label and styling stay pinned to this page's URL (set on load),
+                    // so refreshing /vulnerable or /hardened never flips to the other mode.
                   } catch (e) {}
                 }, 500);
                 // The mode is chosen by the URL, not a tab: /vulnerable or /hardened.
