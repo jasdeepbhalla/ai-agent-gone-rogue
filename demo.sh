@@ -9,6 +9,7 @@
 #   ./demo.sh rebuild    run part two (hardened): the six layers hold
 #   ./demo.sh reset      reseed data and return to vulnerable mode
 #   ./demo.sh status     rows, backups, current mode
+#   ./demo.sh try-delete  (hardened) try the delete by hand as root; the engine refuses
 #   ./demo.sh logs       tail agent + OPA + Falco
 #   ./demo.sh connect    open an interactive shell on the box
 #   ./demo.sh down       close the tunnels
@@ -139,6 +140,10 @@ case "${1:-up}" in
     ;;
 
   status) remote "./rogue status" ;;
+  try-delete)
+    c "==> trying the delete by hand as the database master (root), in hardened mode"
+    remote "./rogue try-delete"
+    ;;
   logs)   c "Ctrl-C to stop"; IID=$(iid); aws ssm start-session --target "$IID" --region "$REGION" \
             --document-name AWS-StartInteractiveCommand \
             --parameters '{"command":["cd /opt/ai-agent-gone-rogue && ./rogue logs"]}' ;;

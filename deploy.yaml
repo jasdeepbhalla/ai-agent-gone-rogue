@@ -393,6 +393,23 @@ Resources:
                   curl -s localhost/state | jq . 2>/dev/null || echo "agent not up yet"
                   ;;
 
+                try-delete)
+                  # "What if the agent had root?" Connect as the database master and try the
+                  # drop by hand. In hardened mode the engine trigger refuses it (layer 9).
+                  if [ "${MODE:-}" != "hardened" ]; then
+                    echo "Deletion protection is only installed in hardened mode."
+                    echo "Run '$0 mode hardened' first, then '$0 try-delete'."
+                    exit 0
+                  fi
+                  echo "==> connecting as the database MASTER (full root access) and running:"
+                  echo "       DROP TABLE reservations;"
+                  echo "----"
+                  psql_as postgres "${DB_MASTER_PASS:-$DB_PASS}" -c "drop table reservations" 2>&1 | sed 's/^/    /' || true
+                  echo "----"
+                  echo "==> the engine refused. reservations are still here:"
+                  "$0" status
+                  ;;
+
                 logs)   docker compose logs -f --tail=40 agent opa & sudo tail -f /var/log/falco/falco.jsonl ;;
 
                 teardown-help)
