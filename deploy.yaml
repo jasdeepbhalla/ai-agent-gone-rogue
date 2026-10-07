@@ -833,7 +833,7 @@ Resources:
                                     ok, rule = policy_allows(name, args)
                                     if not ok:
                                         res = {"error": "DENIED_BY_POLICY", "rule": rule,
-                                               "hint": "A signed approval from a human is required for this action."}
+                                               "hint": "A human approval is required for this action. Ask the operator to approve, then retry with their approval."}
                                     else:
                                         try:
                                             res = TOOLS[name](**args)
