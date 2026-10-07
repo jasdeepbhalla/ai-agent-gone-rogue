@@ -135,7 +135,9 @@ case "${1:-up}" in
     ;;
 
   reset)
-    c "==> reseeding + vulnerable mode"; remote "./rogue seed && ./rogue mode vulnerable"
+    # vulnerable first: it drops the deletion-protection trigger, or the reseed's
+    # table drop would be refused when coming from hardened.
+    c "==> vulnerable mode + reseeding"; remote "./rogue mode vulnerable && ./rogue seed"
     ok "Back to a clean starting point."
     ;;
 

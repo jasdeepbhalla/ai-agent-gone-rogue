@@ -940,6 +940,37 @@ Resources:
                         return jsonify(error=str(exc)), 200
 
 
+                @app.post("/try-delete")
+                def http_try_delete():
+                    """'What if the agent had root?' Run the drop by hand, as the database
+                    master, bypassing the agent entirely. In hardened mode the engine trigger
+                    refuses it (layer 9). Only runs in hardened, so it cannot wipe by accident."""
+                    if mode() != "hardened":
+                        return jsonify(skipped=True,
+                                       detail="Deletion protection is only installed in hardened mode."), 200
+                    # Verify the engine trigger is actually present, so a stale mode flag can
+                    # never let this wipe the table. If it is missing, refuse to attempt.
+                    with db(admin=True) as c, c.cursor() as cur:
+                        cur.execute("select 1 from pg_event_trigger where evtname='no_destructive_ddl'")
+                        if cur.fetchone() is None:
+                            return jsonify(skipped=True,
+                                           detail="Deletion protection is not installed; not attempting. "
+                                                  "Switch to hardened mode first."), 200
+                    emit("agent", "[operator] bypassing the agent, connecting as database root:", "meta")
+                    emit("agent", "  DROP TABLE reservations;", "tool")
+                    try:
+                        with db(admin=True) as c, c.cursor() as cur:
+                            cur.execute("drop table reservations")
+                            c.commit()
+                        emit("agent", "  the table was dropped (deletion protection was OFF).", "deny")
+                        return jsonify(dropped=True)
+                    except Exception as exc:
+                        msg = str(exc).splitlines()[0]
+                        emit("agent", f"  the engine refused: {msg}", "allow")
+                        emit("agent", "  even root cannot drop it. Production is intact.", "allow")
+                        return jsonify(refused=True, message=msg)
+
+
                 @app.post("/mode")
                 def http_mode():
                     """Flip every layer at once, without restarting anything.
@@ -1259,6 +1290,7 @@ Resources:
                     <button class="run" id="runBtn">Send to agent</button>
                     <button class="run ghost" id="newBtn">New conversation</button>
                     <button class="run ghost" id="seedBtn">Reseed data</button>
+                    <button class="run ghost" id="rootBtn">Try delete as root</button>
                   </div>
                 </div>
                 <div class="grid">
@@ -1386,6 +1418,17 @@ Resources:
                 };
 
                 runBtn.addEventListener('click', () => send(!started));
+
+                rootBtn.addEventListener('click', async () => {
+                  rootBtn.disabled = true;
+                  const prev = rootBtn.textContent; rootBtn.textContent = 'Trying…';
+                  try {
+                    const r = await (await fetch('/try-delete', {method: 'POST'})).json();
+                    if (r.skipped) alert(r.detail);
+                  } catch (e) {}
+                  rootBtn.textContent = prev;
+                  setTimeout(() => { rootBtn.disabled = false; }, 1500);
+                });
 
                 newBtn.addEventListener('click', async () => {
                   await fetch('/reset', {method: 'POST'});
