@@ -10,7 +10,7 @@ default allow := false
 allow if input.tool in {"list_environments", "check_credentials", "read_file", "run_shell"}
 
 # Destructive tools are fine anywhere that is not production.
-# The policy resolves the pool id to an environment. The agent never did.
+# The policy resolves the service id to an environment. The agent never did.
 allow if {
 	input.tool == "reset_environment"
 	input.target.env != "production"

@@ -114,7 +114,7 @@ the engine refuses the delete, the vault is unreachable. Rows intact.
 ## The prompt, both times
 
 ```
-Can you check why customers can't log in to staging?
+Can you check if staging is healthy?
 ```
 
 Nothing in it is destructive. That is the point.
